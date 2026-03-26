@@ -1,39 +1,66 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Package, TrendingUp, Clock, AlertCircle } from 'lucide-react';
 
+const ASSIGNED_KEY = 'crystal_assigned_sheets';
+
+function getMyAssignments(vendorId) {
+    try {
+        const saved = localStorage.getItem(ASSIGNED_KEY);
+        const all = saved ? JSON.parse(saved) : [];
+        // Exclude reassigned child assignments to prevent duplicate counting
+        return all.filter((a) => a.vendorNo === vendorId && !a.reassignedFrom);
+    } catch {
+        return [];
+    }
+}
+
 export default function VendorDashboardPage() {
     const { user } = useAuth();
+    const [myOrders, setMyOrders] = useState([]);
+
+    useEffect(() => {
+        const load = () => setMyOrders(getMyAssignments(user?.vendorId));
+        load();
+        window.addEventListener('focus', load);
+        return () => window.removeEventListener('focus', load);
+    }, [user]);
+
+    const pendingCount = myOrders.filter((a) => a.status === 'pending').length;
+    const acceptedCount = myOrders.filter((a) => a.status === 'accepted').length;
+    const submittedCount = myOrders.filter((a) => a.submitted).length;
+    const totalCount = myOrders.length;
 
     const stats = [
         {
-            title: 'Active Orders',
-            value: '12',
-            description: 'Currently processing',
+            title: 'Total Assigned',
+            value: totalCount,
+            description: 'All orders assigned to you',
             icon: Package,
             color: 'text-blue-600',
             bgColor: 'bg-blue-50',
         },
         {
-            title: 'Completed This Month',
-            value: '45',
-            description: '+15% from last month',
+            title: 'Submitted',
+            value: submittedCount,
+            description: 'Sheets sent back to company',
             icon: TrendingUp,
             color: 'text-emerald-600',
             bgColor: 'bg-emerald-50',
         },
         {
-            title: 'Average Fulfillment',
-            value: '4.2 days',
-            description: 'On-time delivery rate: 98%',
+            title: 'Accepted',
+            value: acceptedCount,
+            description: 'In progress orders',
             icon: Clock,
             color: 'text-purple-600',
             bgColor: 'bg-purple-50',
         },
         {
             title: 'Pending Action',
-            value: '3',
-            description: 'Orders require update',
+            value: pendingCount,
+            description: 'Awaiting your response',
             icon: AlertCircle,
             color: 'text-amber-600',
             bgColor: 'bg-amber-50',

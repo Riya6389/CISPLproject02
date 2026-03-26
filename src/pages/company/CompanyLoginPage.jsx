@@ -57,11 +57,11 @@ export default function CompanyLoginPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-blue-100">Email</Label>
+                <Label htmlFor="email" className="text-blue-100">User ID</Label>
                 <Input
                   id="email"
-                  type="email"
-                  placeholder="admin@crystalindustries.com"
+                  type="text"
+                  placeholder="admin"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -98,7 +98,7 @@ export default function CompanyLoginPage() {
 
             <div className="mt-6 pt-6 border-t border-white/10">
               <p className="text-xs text-blue-300 text-center">
-                Demo credentials: admin@crystalindustries.com / demo123
+                Demo credentials: admin / admin
               </p>
             </div>
           </CardContent>

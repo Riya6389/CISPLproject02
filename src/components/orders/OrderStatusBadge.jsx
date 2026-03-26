@@ -1,5 +1,10 @@
 import { Badge } from '@/components/ui/badge';
 
+const fallbackConfig = {
+  label: 'Unknown',
+  className: 'bg-slate-100 text-slate-600 hover:bg-slate-100',
+};
+
 export function OrderStatusBadge({ status }) {
   const statusConfig = {
     pending: {
@@ -16,7 +21,7 @@ export function OrderStatusBadge({ status }) {
     },
   };
 
-  const config = statusConfig[status];
+  const config = statusConfig[status] || fallbackConfig;
 
   return (
     <Badge variant="secondary" className={config.className}>
@@ -45,7 +50,7 @@ export function OrderPriorityBadge({ priority }) {
     },
   };
 
-  const config = priorityConfig[priority];
+  const config = priorityConfig[priority] || fallbackConfig;
 
   return (
     <Badge variant="secondary" className={config.className}>

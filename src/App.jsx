@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './lib/context/AuthContext';
 import { Toaster } from './components/ui/sonner';
 import HomePage from './pages/HomePage';
@@ -11,6 +11,7 @@ import ManageJobPage from './pages/company/ManageJobPage';
 import ManageVendorsPage from './pages/company/ManageVendorsPage';
 import CompanyOrderStatusPage from './pages/company/CompanyOrderStatusPage';
 import CompanyPendingWorkPage from './pages/company/CompanyPendingWorkPage';
+import CompanyCompletedWorkPage from './pages/company/CompanyCompletedWorkPage';
 import CompanyLayout from './layouts/CompanyLayout';
 import VendorLayout from './layouts/VendorLayout';
 import VendorLoginPage from './pages/vendor/VendorLoginPage';
@@ -21,7 +22,7 @@ import VendorOrderProgressPage from './pages/vendor/VendorOrderProgressPage';
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/company/login" element={<CompanyLoginPage />} />
@@ -36,6 +37,7 @@ function App() {
             <Route path="/company/manage-vendors" element={<ManageVendorsPage />} />
             <Route path="/company/order-status" element={<CompanyOrderStatusPage />} />
             <Route path="/company/pending-work" element={<CompanyPendingWorkPage />} />
+            <Route path="/company/completed-work" element={<CompanyCompletedWorkPage />} />
           </Route>
 
           <Route element={<VendorLayout />}>
@@ -46,8 +48,8 @@ function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
-      <Toaster position="top-right" richColors />
+        <Toaster position="top-right" richColors />
+      </HashRouter>
     </AuthProvider>
   );
 }

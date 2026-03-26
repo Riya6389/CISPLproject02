@@ -39,8 +39,30 @@ export default function CompanyOrderStatusPage() {
 
     const loadData = () => {
         const all = getAssignments();
-        const accepted = all.filter((a) => a.status === 'accepted' && a.submitted === true);
-        setAssignments(accepted);
+        // Show accepted + submitted sheets that still have sections needing review
+        // Exclude sheets where all non-reassigned sections are reviewed as "ok" (those go to Completed Works)
+        // Pending and reassigned sections are hidden in the render
+        const readyForReview = all.filter((a) => {
+            if (a.status !== 'accepted' || !a.submitted) return false;
+            const sections = a.sheet.sections || [];
+            if (sections.length === 0) return false;
+            const sectionStatuses = a.sectionStatuses || sections.map(() => 'pending');
+            const reviewStatuses = a.reviewStatuses || sections.map(() => null);
+            // Check non-reassigned sections only
+            const activeIndices = sectionStatuses.reduce((acc, s, i) => {
+                if (s !== 'reassigned') acc.push(i);
+                return acc;
+            }, []);
+            if (activeIndices.length === 0) return false;
+            // Exclude if all active sections are reviewed as OK
+            const allActiveOk = activeIndices.every((i) => reviewStatuses[i] === 'ok');
+            if (allActiveOk) return false;
+            // Must have at least one complete section to review (pending ones go to Pending Work)
+            const hasCompleteSectionToReview = activeIndices.some((i) => sectionStatuses[i] === 'complete');
+            if (!hasCompleteSectionToReview) return false;
+            return true;
+        });
+        setAssignments(readyForReview);
     };
 
     const handleReview = (assignmentId, sectionIndex, reviewStatus) => {
@@ -64,7 +86,7 @@ export default function CompanyOrderStatusPage() {
             return a;
         });
         localStorage.setItem(ASSIGNED_KEY, JSON.stringify(updated));
-        setAssignments(updated.filter((a) => a.status === 'accepted' && a.submitted === true));
+        loadData();
         setDescriptions((prev) => ({ ...prev, [descKey]: '' }));
         toast.success(`Section marked as ${reviewStatus.charAt(0).toUpperCase() + reviewStatus.slice(1)}!`);
     };
@@ -123,9 +145,12 @@ export default function CompanyOrderStatusPage() {
                         const sectionStatuses = assignment.sectionStatuses || sections.map(() => 'pending');
                         const reviewStatuses = assignment.reviewStatuses || sections.map(() => null);
                         const reviewDescriptions = assignment.reviewDescriptions || sections.map(() => '');
-                        const completedCount = sectionStatuses.filter((s) => s === 'complete').length;
-                        const totalSections = sectionStatuses.length;
-                        const reviewedCount = reviewStatuses.filter((s) => s !== null).length;
+                        // Only count complete sections (pending ones go to Pending Work page)
+                        const completeSectionCount = sectionStatuses.filter((s) => s === 'complete').length;
+                        const reviewedCount = sectionStatuses.reduce((count, s, i) => {
+                            if (s === 'complete' && reviewStatuses[i] !== null) return count + 1;
+                            return count;
+                        }, 0);
 
                         return (
                             <Card key={assignment.id} className="overflow-hidden">
@@ -135,8 +160,8 @@ export default function CompanyOrderStatusPage() {
                                     onClick={() => setExpandedId(isExpanded ? null : assignment.id)}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className={`h-10 w-10 rounded flex items-center justify-center ${reviewedCount === totalSections && totalSections > 0 ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
-                                            {reviewedCount === totalSections && totalSections > 0 ? <CheckCircle2 className="h-5 w-5" /> : <CircleDot className="h-5 w-5" />}
+                                        <div className={`h-10 w-10 rounded flex items-center justify-center ${reviewedCount === completeSectionCount && completeSectionCount > 0 ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                                            {reviewedCount === completeSectionCount && completeSectionCount > 0 ? <CheckCircle2 className="h-5 w-5" /> : <CircleDot className="h-5 w-5" />}
                                         </div>
                                         <div>
                                             <p className="font-semibold text-slate-800">
@@ -150,9 +175,9 @@ export default function CompanyOrderStatusPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        {totalSections > 0 && (
+                                        {completeSectionCount > 0 && (
                                             <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded">
-                                                {reviewedCount}/{totalSections} Reviewed
+                                                {reviewedCount}/{completeSectionCount} Reviewed
                                             </span>
                                         )}
                                         {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
@@ -177,6 +202,8 @@ export default function CompanyOrderStatusPage() {
                                             <div className="space-y-4">
                                                 {sections.map((section, sIdx) => {
                                                     const sStatus = sectionStatuses[sIdx] || 'pending';
+                                                    // Skip pending and reassigned sections — they don't belong here
+                                                    if (sStatus === 'pending' || sStatus === 'reassigned') return null;
                                                     const rStatus = reviewStatuses[sIdx];
                                                     const rDesc = reviewDescriptions[sIdx] || '';
                                                     const descKey = `${assignment.id}-${sIdx}`;

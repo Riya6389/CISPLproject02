@@ -32,8 +32,9 @@ export default function VendorOrderProgressPage() {
 
     const loadOrders = () => {
         const all = getAssignments();
+        // Exclude reassigned child assignments to prevent duplicates
         const accepted = all.filter(
-            (a) => a.vendorNo === user?.vendorId && a.status === 'accepted'
+            (a) => a.vendorNo === user?.vendorId && a.status === 'accepted' && !a.reassignedFrom
         );
         setAcceptedOrders(accepted);
     };

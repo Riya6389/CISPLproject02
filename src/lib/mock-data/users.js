@@ -1,11 +1,11 @@
 export const companyUsers = [
   {
     id: 'company-1',
-    email: 'admin@crystalindustries.com',
+    email: 'admin',
     name: 'Admin User',
     role: 'admin',
     portalType: 'company',
-    password: 'demo123',
+    password: 'admin',
   },
   {
     id: 'company-2',

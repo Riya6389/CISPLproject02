@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Package, Lock, Eye, EyeOff } from 'lucide-react';
+import { Package, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function VendorLoginPage() {
@@ -39,6 +39,13 @@ export default function VendorLoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
             <div className="w-full max-w-md space-y-8">
+                <Link
+                    to="/"
+                    className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Portal Selection
+                </Link>
                 <div className="flex flex-col items-center justify-center text-center">
                     <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-600 text-white shadow-lg mb-6">
                         <Package className="w-8 h-8" />

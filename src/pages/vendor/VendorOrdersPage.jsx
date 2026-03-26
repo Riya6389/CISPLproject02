@@ -40,7 +40,8 @@ export default function VendorOrdersPage() {
     const loadOrders = () => {
         const all = getAssignments();
         // Filter by vendor — match vendorNo to user.vendorId
-        const mine = all.filter((a) => a.vendorNo === user?.vendorId);
+        // Exclude reassigned child assignments to prevent duplicates
+        const mine = all.filter((a) => a.vendorNo === user?.vendorId && !a.reassignedFrom);
         setAssignments(mine);
     };
 
@@ -82,8 +83,6 @@ export default function VendorOrdersPage() {
             </span>
         );
     };
-
-    const inputClass = "border-0 shadow-none h-8 rounded-none focus-visible:ring-0 px-1";
 
     return (
         <div className="max-w-5xl mx-auto space-y-6 pb-12">

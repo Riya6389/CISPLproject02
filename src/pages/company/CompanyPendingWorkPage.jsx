@@ -43,14 +43,18 @@ export default function CompanyPendingWorkPage() {
         setVendors(getFromStorage(VENDORS_KEY));
 
         // Find submitted sheets that have:
-        // 1. Pending sections from vendor, OR
-        // 2. Sections marked as retake/repair by company
+        // 1. Pending sections from vendor (not reassigned), OR
+        // 2. Sections marked as retake/repair by company (not reassigned)
         const withPending = all.filter((a) => {
             if (a.status !== 'accepted' || !a.submitted) return false;
             const statuses = a.sectionStatuses || (a.sheet.sections || []).map(() => 'pending');
             const reviewStatuses = a.reviewStatuses || (a.sheet.sections || []).map(() => null);
-            return statuses.some((s) => s === 'pending') ||
-                   reviewStatuses.some((r) => r === 'retake' || r === 'repair');
+            return statuses.some((s, i) => {
+                if (s === 'reassigned') return false;
+                if (s === 'pending') return true;
+                if (reviewStatuses[i] === 'retake' || reviewStatuses[i] === 'repair') return true;
+                return false;
+            });
         });
         setPendingItems(withPending);
     };
@@ -110,7 +114,25 @@ export default function CompanyPendingWorkPage() {
             reassignedFrom: assignmentId,
         };
 
-        const updated = [newAssignment, ...all];
+        // Mark reassigned sections in the original assignment as 'reassigned'
+        const updatedOriginalStatuses = [...sectionStatuses];
+        const updatedOriginalReviews = [...reviewStatuses];
+        (original.sheet.sections || []).forEach((_, idx) => {
+            if (sectionStatuses[idx] === 'pending' ||
+                reviewStatuses[idx] === 'retake' ||
+                reviewStatuses[idx] === 'repair') {
+                updatedOriginalStatuses[idx] = 'reassigned';
+                updatedOriginalReviews[idx] = 'reassigned';
+            }
+        });
+
+        const updated = all.map((a) => {
+            if (a.id === assignmentId) {
+                return { ...a, sectionStatuses: updatedOriginalStatuses, reviewStatuses: updatedOriginalReviews };
+            }
+            return a;
+        });
+        updated.unshift(newAssignment);
         localStorage.setItem(ASSIGNED_KEY, JSON.stringify(updated));
 
         setReassignVendor((prev) => ({ ...prev, [assignmentId]: '' }));
@@ -150,9 +172,11 @@ export default function CompanyPendingWorkPage() {
                         const reviewStatuses = assignment.reviewStatuses || sections.map(() => null);
                         const reviewDescriptions = assignment.reviewDescriptions || sections.map(() => '');
                         const pendingCount = sections.filter((_, i) =>
-                            sectionStatuses[i] === 'pending' ||
-                            reviewStatuses[i] === 'retake' ||
-                            reviewStatuses[i] === 'repair'
+                            sectionStatuses[i] !== 'reassigned' && (
+                                sectionStatuses[i] === 'pending' ||
+                                reviewStatuses[i] === 'retake' ||
+                                reviewStatuses[i] === 'repair'
+                            )
                         ).length;
 
                         return (

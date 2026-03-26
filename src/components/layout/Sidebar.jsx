@@ -9,7 +9,8 @@ import {
   Users,
   TrendingUp,
   Activity,
-  AlertTriangle
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
 
 export function Sidebar({ portalType }) {
@@ -51,6 +52,11 @@ export function Sidebar({ portalType }) {
       title: 'Pending Work',
       href: '/company/pending-work',
       icon: <AlertTriangle className="h-5 w-5" />,
+    },
+    {
+      title: 'Completed Works',
+      href: '/company/completed-work',
+      icon: <CheckCircle2 className="h-5 w-5" />,
     },
   ];
 

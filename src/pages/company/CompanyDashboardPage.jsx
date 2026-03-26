@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/context/AuthContext';
-import { useOrders } from '@/lib/hooks/useOrders';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { OrderCard } from '@/components/orders/OrderCard';
 import {
   ClipboardList,
   Clock,
@@ -19,10 +17,22 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const FILM_SIZES_KEY = 'crystal_film_sizes';
+const ASSIGNED_KEY = 'crystal_assigned_sheets';
+
+function getAssignedSheets() {
+    try {
+        const saved = localStorage.getItem(ASSIGNED_KEY);
+        const all = saved ? JSON.parse(saved) : [];
+        // Only count root assignments (not reassigned children)
+        return all.filter((a) => !a.reassignedFrom);
+    } catch {
+        return [];
+    }
+}
 
 export default function CompanyDashboardPage() {
   const { user } = useAuth();
-  const { orders, stats, isLoading } = useOrders();
+  const [sheets, setSheets] = useState([]);
   const [showFilmSizes, setShowFilmSizes] = useState(false);
   const [filmSizes, setFilmSizes] = useState(() => {
     try {
@@ -33,6 +43,13 @@ export default function CompanyDashboardPage() {
     }
   });
   const [newSize, setNewSize] = useState('');
+
+  useEffect(() => {
+    const load = () => setSheets(getAssignedSheets());
+    load();
+    window.addEventListener('focus', load);
+    return () => window.removeEventListener('focus', load);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(FILM_SIZES_KEY, JSON.stringify(filmSizes));
@@ -56,46 +73,41 @@ export default function CompanyDashboardPage() {
     toast.success(`Film size "${size}" removed.`);
   };
 
-  const recentOrders = orders.slice(0, 4);
+  const totalCount = sheets.length;
+  const pendingCount = sheets.filter((a) => a.status === 'pending').length;
+  const acceptedCount = sheets.filter((a) => a.status === 'accepted' && !a.submitted).length;
+  const submittedCount = sheets.filter((a) => a.submitted).length;
 
   const statCards = [
     {
-      title: 'Total Orders',
-      value: stats.total,
+      title: 'Total Assigned',
+      value: totalCount,
       icon: ClipboardList,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
     },
     {
-      title: 'Pending',
-      value: stats.pending,
+      title: 'Pending Response',
+      value: pendingCount,
       icon: Clock,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-100',
     },
     {
       title: 'In Progress',
-      value: stats.inProgress,
+      value: acceptedCount,
       icon: PlayCircle,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
     },
     {
-      title: 'Completed',
-      value: stats.completed,
+      title: 'Submitted',
+      value: submittedCount,
       icon: CheckCircle2,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
   ];
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -204,27 +216,47 @@ export default function CompanyDashboardPage() {
         ))}
       </div>
 
-      {/* Recent Orders */}
+      {/* Recent Assignments */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Recent Orders</CardTitle>
+          <CardTitle>Recent Assignments</CardTitle>
           <Button variant="ghost" asChild>
-            <Link to="/company/orders">View All</Link>
+            <Link to="/company/order-status">View All</Link>
           </Button>
         </CardHeader>
         <CardContent>
-          {recentOrders.length === 0 ? (
+          {sheets.length === 0 ? (
             <div className="text-center py-8 text-slate-500">
               <ClipboardList className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-              <p>No orders yet</p>
+              <p>No assignments yet</p>
               <Button asChild className="mt-4">
                 <Link to="/company/orders/create">Create your first order</Link>
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {recentOrders.map((order) => (
-                <OrderCard key={order.id} order={order} portalType="company" />
+            <div className="space-y-3">
+              {sheets.slice(0, 5).map((sheet) => (
+                <div
+                  key={sheet.id}
+                  className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium text-slate-800">{sheet.sheet?.formData?.jobNo || '—'}</p>
+                    <p className="text-sm text-slate-500">
+                      Vendor: {sheet.vendorName || '—'} • RS: {sheet.sheet?.formData?.rsNo || '—'}
+                    </p>
+                  </div>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    sheet.submitted ? 'bg-green-100 text-green-800' :
+                    sheet.status === 'accepted' ? 'bg-blue-100 text-blue-800' :
+                    sheet.status === 'declined' ? 'bg-red-100 text-red-800' :
+                    'bg-amber-100 text-amber-800'
+                  }`}>
+                    {sheet.submitted ? 'Submitted' :
+                     sheet.status === 'accepted' ? 'In Progress' :
+                     sheet.status === 'declined' ? 'Declined' : 'Pending'}
+                  </span>
+                </div>
               ))}
             </div>
           )}
